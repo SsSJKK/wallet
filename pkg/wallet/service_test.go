@@ -85,3 +85,22 @@ func Test_FindAccountByID_2(t *testing.T) {
 		t.Errorf("ERROR %v, %v", err, ErrAccountNotFound)
 	}
 }
+
+func Test_FindPaymentById_OK(t *testing.T) {
+	svc := &Service{}
+	account, _ := svc.RegisterAccount("992000000001")
+	svc.Deposit(1, 100)
+	payment, _ := svc.Pay(1, 20, "A")
+	svc.Reject(payment.ID)
+	if !reflect.DeepEqual(account.Balance, types.Money(100)) {
+		t.Errorf("ERROR %v", account.Balance)
+	}
+}
+
+func Test_FindPaymentById_Fail(t *testing.T) {
+	svc := &Service{}
+	err := svc.Reject("payment.ID")
+	if !reflect.DeepEqual(err, ErrPaymentNotFound) {
+		t.Errorf("ERROR %v, %v", err, ErrPaymentNotFound)
+	}
+}
