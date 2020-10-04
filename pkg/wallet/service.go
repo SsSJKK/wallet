@@ -142,3 +142,20 @@ func (s *Service) Reject(paymentID string) error {
 	acc.Balance += pay.Amount
 	return nil
 }
+
+//Repeat F
+func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
+
+	pay, _ := s.FindPaymentByID(paymentID)
+	if pay == nil {
+		return nil, ErrPaymentNotFound
+	}
+	repeatPay := &types.Payment{
+		AccountID: pay.AccountID,
+		Amount:    pay.Amount,
+		Category:  pay.Category,
+		Status:    pay.Status,
+	}
+	return repeatPay, nil
+
+}

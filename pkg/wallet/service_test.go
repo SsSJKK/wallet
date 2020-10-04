@@ -7,6 +7,24 @@ import (
 	"github.com/SsSJKK/wallet/pkg/types"
 )
 
+type testService struct {
+	*Service
+}
+
+func newTestService() *testService {
+	return &testService{Service: &Service{}}
+}
+
+var testSvc = newTestService()
+var testAcc, _ = testSvc.RegisterAccount("992999999999")
+var testPay = &types.Payment{
+	ID:        "dsaafgasgsdfklgjsdf;l",
+	AccountID: testAcc.ID,
+	Amount:    types.Money(100),
+	Category:  "TestPay",
+	Status:    types.PaymentStatusInProgress,
+}
+
 func Test_RegisterAccount(t *testing.T) {
 	svc := &Service{}
 	_, err := svc.RegisterAccount("992000000001")
@@ -102,5 +120,26 @@ func Test_FindPaymentById_Fail(t *testing.T) {
 	err := svc.Reject("payment.ID")
 	if !reflect.DeepEqual(err, ErrPaymentNotFound) {
 		t.Errorf("ERROR %v, %v", err, ErrPaymentNotFound)
+	}
+}
+
+func Test_Repeat_OK(t *testing.T) {
+	svc := &Service{}
+	acc, _ := svc.RegisterAccount("992999999999")
+	svc.Deposit(acc.ID, 100)
+	pay, _ := svc.Pay(acc.ID, 20, "TestPay")
+	repPay, _ := svc.Repeat(pay.ID)
+
+	if pay.AccountID != repPay.AccountID {
+		t.Errorf("ERROR: %v %v", pay.AccountID, repPay.AccountID)
+	}
+	if pay.Amount != repPay.Amount {
+		t.Errorf("ERROR: %v %v", pay.Amount, repPay.Amount)
+	}
+	if pay.Category != repPay.Category {
+		t.Errorf("ERROR: %v %v", pay.Category, repPay.Category)
+	}
+	if pay.Status != repPay.Status {
+		t.Errorf("ERROR: %v %v", pay.Status, repPay.Status)
 	}
 }
