@@ -162,8 +162,8 @@ func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	return payment, nil
 }
 
-//Favorite meth
-func (s *Service) Favorite(paymentID string, name string) (*types.Favorite, error) {
+//FavoritePayment meth
+func (s *Service) FavoritePayment(paymentID string, name string) (*types.Favorite, error) {
 	pay, err := s.FindPaymentByID(paymentID)
 	if err != nil {
 		return nil, err
