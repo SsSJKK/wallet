@@ -134,12 +134,12 @@ func Test_Repeat_OK(t *testing.T) {
 	}
 }
 
-func Test_Favorite_OK(t *testing.T) {
+func Test_FavoritePayment_OK(t *testing.T) {
 	svc := &Service{}
 	acc, _ := svc.RegisterAccount("992999999999")
 	svc.Deposit(acc.ID, 100)
 	pay, _ := svc.Pay(acc.ID, 20, "TestPay")
-	fvrt, err := svc.Favorite(pay.ID, "TestFav")
+	fvrt, err := svc.FavoritePayment(pay.ID, "TestFav")
 	if err != nil {
 		t.Errorf("ERRRROORRR: Test_Favorite_OK: %v", err)
 	}
@@ -162,7 +162,7 @@ func Test_Pay_Favorite_OK(t *testing.T) {
 	acc, _ := svc.RegisterAccount("992999999999")
 	svc.Deposit(acc.ID, 100)
 	pay, _ := svc.Pay(acc.ID, 20, "TestPay")
-	fvrt, err := svc.Favorite(pay.ID, "TestFav")
+	fvrt, err := svc.FavoritePayment(pay.ID, "TestFav")
 	payFvrt, err := svc.PayFromFavorite(fvrt.ID)
 
 	if err != nil {
