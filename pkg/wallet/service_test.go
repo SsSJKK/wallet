@@ -15,16 +15,6 @@ func newTestService() *testService {
 	return &testService{Service: &Service{}}
 }
 
-var testSvc = newTestService()
-var testAcc, _ = testSvc.RegisterAccount("992999999999")
-var testPay = &types.Payment{
-	ID:        "dsaafgasgsdfklgjsdf;l",
-	AccountID: testAcc.ID,
-	Amount:    types.Money(100),
-	Category:  "TestPay",
-	Status:    types.PaymentStatusInProgress,
-}
-
 func Test_RegisterAccount(t *testing.T) {
 	svc := &Service{}
 	_, err := svc.RegisterAccount("992000000001")
@@ -141,5 +131,50 @@ func Test_Repeat_OK(t *testing.T) {
 	}
 	if pay.Status != repPay.Status {
 		t.Errorf("ERROR: %v %v", pay.Status, repPay.Status)
+	}
+}
+
+func Test_Favorite_OK(t *testing.T) {
+	svc := &Service{}
+	acc, _ := svc.RegisterAccount("992999999999")
+	svc.Deposit(acc.ID, 100)
+	pay, _ := svc.Pay(acc.ID, 20, "TestPay")
+	fvrt, err := svc.Favorite(pay.ID, "TestFav")
+	if err != nil {
+		t.Errorf("ERRRROORRR: Test_Favorite_OK: %v", err)
+	}
+	if fvrt.AccountID != pay.AccountID {
+		t.Errorf("ERROR: Test_Favorite_OK_AccountID: %v %v", fvrt.AccountID, pay.AccountID)
+	}
+	if fvrt.Name != "TestFav" {
+		t.Errorf("ERROR: Test_Favorite_OK_Name: %v TestFav", fvrt.Name)
+	}
+	if fvrt.Amount != pay.Amount {
+		t.Errorf("ERROR: Test_Favorite_OK_Amount: %v %v", fvrt.Amount, pay.Amount)
+	}
+	if fvrt.Category != pay.Category {
+		t.Errorf("ERROR: Test_Favorite_OK_Category: %v %v", fvrt.Category, pay.Category)
+	}
+}
+
+func Test_Pay_Favorite_OK(t *testing.T) {
+	svc := &Service{}
+	acc, _ := svc.RegisterAccount("992999999999")
+	svc.Deposit(acc.ID, 100)
+	pay, _ := svc.Pay(acc.ID, 20, "TestPay")
+	fvrt, err := svc.Favorite(pay.ID, "TestFav")
+	payFvrt, err := svc.PayFromFavorite(fvrt.ID)
+
+	if err != nil {
+		t.Errorf("ERRRROORRR: Test_payFvrt_OK: %v", err)
+	}
+	if fvrt.AccountID != payFvrt.AccountID {
+		t.Errorf("ERROR: Test_Favorite_OK_AccountID: %v %v", fvrt.AccountID, payFvrt.AccountID)
+	}
+	if fvrt.Amount != payFvrt.Amount {
+		t.Errorf("ERROR: Test_Favorite_OK_Amount: %v %v", fvrt.Amount, payFvrt.Amount)
+	}
+	if fvrt.Category != payFvrt.Category {
+		t.Errorf("ERROR: Test_Favorite_OK_Category: %v %v", fvrt.Category, payFvrt.Category)
 	}
 }
