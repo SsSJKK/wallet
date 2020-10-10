@@ -182,7 +182,7 @@ func (s *Service) ExportToFile(path string) error {
 	for _, acc := range s.accounts {
 		strID := strconv.FormatInt(int64(acc.ID), 10) + ";"
 		strPhone := acc.Phone + ";"
-		strBalance := strconv.FormatInt(int64(acc.Balance), 10) + ";"
+		strBalance := strconv.FormatInt(int64(acc.Balance), 10)
 
 		text += strID + string(strPhone) + strBalance + "|"
 	}
