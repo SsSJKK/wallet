@@ -2,8 +2,10 @@ package wallet
 
 import (
 	"errors"
+	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -190,6 +192,43 @@ func (s *Service) ExportToFile(path string) error {
 	_, err = file.Write([]byte(text))
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *Service) ImportFromFile(path string) error {
+
+	file, err := os.Open("./data/export.txt")
+	if err != nil {
+		return err
+
+	}
+	defer file.Close()
+	data := make([]byte, 64)
+	read := ""
+	for {
+		n, err := file.Read(data)
+		if err == io.EOF { // если конец файла
+			break // выходим из цикла
+		}
+		read += string(data[:n])
+
+	}
+	//fmt.Println(a)
+	importAcc := strings.Split(read, "|")
+	importAcc = importAcc[:len(importAcc)-1]
+	for _, acc := range importAcc {
+		account := strings.Split(acc, ";")
+		ID, _ := strconv.ParseInt(account[0], 10, 64)
+		phone := types.Phone(account[1])
+		balance, _ := strconv.ParseInt(account[2], 10, 64)
+
+		addAcc := &types.Account{
+			ID:      ID,
+			Phone:   phone,
+			Balance: types.Money(balance),
+		}
+		s.accounts = append(s.accounts, addAcc)
 	}
 	return nil
 }
