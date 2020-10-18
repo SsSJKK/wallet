@@ -235,68 +235,70 @@ func (s *Service) ImportFromFile(path string) error {
 }
 
 func (s *Service) Export(dir string) error {
+	if s.accounts != nil {
+		fileAccounts, err := os.Create(dir + "/accounts.dump")
+		if err != nil {
+			return err
+		}
+		defer fileAccounts.Close()
+		text := ""
+		for _, acc := range s.accounts {
+			strID := strconv.FormatInt(int64(acc.ID), 10) + ";"
+			strPhone := acc.Phone + ";"
+			strBalance := strconv.FormatInt(int64(acc.Balance), 10)
 
-	fileAccounts, err := os.Create(dir + "/accounts.dump")
-	if err != nil {
-		return err
+			text += strID + string(strPhone) + strBalance + "\n"
+		}
+
+		_, err = fileAccounts.Write([]byte(text))
+		if err != nil {
+			return err
+		}
 	}
-	defer fileAccounts.Close()
-	text := ""
-	for _, acc := range s.accounts {
-		strID := strconv.FormatInt(int64(acc.ID), 10) + ";"
-		strPhone := acc.Phone + ";"
-		strBalance := strconv.FormatInt(int64(acc.Balance), 10)
+	if s.payments != nil {
+		filePay, err := os.Create(dir + "/payments.dump")
+		if err != nil {
+			return err
+		}
+		defer filePay.Close()
+		text := ""
+		for _, pay := range s.payments {
+			strID := pay.ID + ";"
+			strAccountID := strconv.FormatInt(int64(pay.AccountID), 10) + ";"
+			strAmount := strconv.FormatInt(int64(pay.Amount), 10) + ";"
+			strCategory := string(pay.Category) + ";"
+			strStatus := string(pay.Status) + ";"
 
-		text += strID + string(strPhone) + strBalance + "\n"
+			text += strID + strAccountID + strAmount + strCategory + strStatus + "\n"
+		}
+
+		_, err = filePay.Write([]byte(text))
+		if err != nil {
+			return err
+		}
 	}
+	if s.favorites != nil {
+		fileFav, err := os.Create(dir + "/favorites.dump")
+		if err != nil {
+			return err
+		}
+		defer fileFav.Close()
+		text := ""
+		for _, fav := range s.favorites {
+			strID := fav.ID + ";"
+			strAccountID := strconv.FormatInt(int64(fav.AccountID), 10) + ";"
+			strAmount := strconv.FormatInt(int64(fav.Amount), 10) + ";"
+			strName := fav.Name + ";"
+			strCategory := string(fav.Category) + ";"
 
-	_, err = fileAccounts.Write([]byte(text))
-	if err != nil {
-		return err
+			text += strID + strAccountID + strAmount + strName + strCategory + "\n"
+		}
+
+		_, err = fileFav.Write([]byte(text))
+		if err != nil {
+			return err
+		}
 	}
-
-	filePay, err := os.Create(dir + "/payments.dump")
-	if err != nil {
-		return err
-	}
-	defer filePay.Close()
-	text = ""
-	for _, pay := range s.payments {
-		strID := pay.ID + ";"
-		strAccountID := strconv.FormatInt(int64(pay.AccountID), 10) + ";"
-		strAmount := strconv.FormatInt(int64(pay.Amount), 10) + ";"
-		strCategory := string(pay.Category) + ";"
-		strStatus := string(pay.Status) + ";"
-
-		text += strID + strAccountID + strAmount + strCategory + strStatus + "\n"
-	}
-
-	_, err = filePay.Write([]byte(text))
-	if err != nil {
-		return err
-	}
-
-	fileFav, err := os.Create(dir + "/favorites.dump")
-	if err != nil {
-		return err
-	}
-	defer fileFav.Close()
-	text = ""
-	for _, fav := range s.favorites {
-		strID := fav.ID + ";"
-		strAccountID := strconv.FormatInt(int64(fav.AccountID), 10) + ";"
-		strAmount := strconv.FormatInt(int64(fav.Amount), 10) + ";"
-		strName := fav.Name + ";"
-		strCategory := string(fav.Category) + ";"
-
-		text += strID + strAccountID + strAmount + strName + strCategory + "\n"
-	}
-
-	_, err = fileFav.Write([]byte(text))
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

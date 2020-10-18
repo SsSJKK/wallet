@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+//	"fmt"
 
 	"github.com/SsSJKK/wallet/pkg/wallet"
 )
@@ -31,14 +31,6 @@ func main() {
 	fmt.Println(svc.FindAccountByID(5))
 	fmt.Println(svc.FindAccountByID(6))*/
 
-	svc.Import("./data")
-	fmt.Println(svc.FindAccountByID(1))
-	fmt.Println(svc.FindAccountByID(2))
-	fmt.Println(svc.FindAccountByID(3))
-	fmt.Println(svc.FindAccountByID(4))
-	fmt.Println(svc.FindAccountByID(5))
-	fmt.Println(svc.FindAccountByID(6))
-	fmt.Println(svc.FindPaymentByID("c2925ea8-038c-4af0-8736-3c6f5fc087d6"))
-	fmt.Println(svc.FindFavoriteByID("4efb2b96-2766-41cc-a2f9-821e51e37819"))
+	svc.Export("./data")
 
 }
