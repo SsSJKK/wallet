@@ -1,8 +1,9 @@
 package wallet
 
 import (
+	"bufio"
 	"errors"
-	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -173,62 +174,179 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	return s.Pay(favorite.AccountID, favorite.Amount, favorite.Category)
 }
 
-func (s *Service) ExportToFile(path string) error {
+func (s *Service) Export(dir string) error {
 
-	file, err := os.Create(path)
+	fileAccounts, err := os.Create(dir + "/accounts.dump")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer fileAccounts.Close()
 	text := ""
 	for _, acc := range s.accounts {
 		strID := strconv.FormatInt(int64(acc.ID), 10) + ";"
 		strPhone := acc.Phone + ";"
 		strBalance := strconv.FormatInt(int64(acc.Balance), 10)
 
-		text += strID + string(strPhone) + strBalance + "|"
+		text += strID + string(strPhone) + strBalance + "\n"
 	}
 
-	_, err = file.Write([]byte(text))
+	_, err = fileAccounts.Write([]byte(text))
 	if err != nil {
 		return err
 	}
+
+	filePay, err := os.Create(dir + "/payments.dump")
+	if err != nil {
+		return err
+	}
+	defer filePay.Close()
+	text = ""
+	for _, pay := range s.payments {
+		strID := pay.ID + ";"
+		strAccountID := strconv.FormatInt(int64(pay.AccountID), 10) + ";"
+		strAmount := strconv.FormatInt(int64(pay.Amount), 10) + ";"
+		strCategory := string(pay.Category) + ";"
+		strStatus := string(pay.Status) + ";"
+
+		text += strID + strAccountID + strAmount + strCategory + strStatus + "\n"
+	}
+
+	_, err = filePay.Write([]byte(text))
+	if err != nil {
+		return err
+	}
+
+	fileFav, err := os.Create(dir + "/favorites.dump")
+	if err != nil {
+		return err
+	}
+	defer fileFav.Close()
+	text = ""
+	for _, fav := range s.favorites {
+		strID := fav.ID + ";"
+		strAccountID := strconv.FormatInt(int64(fav.AccountID), 10) + ";"
+		strAmount := strconv.FormatInt(int64(fav.Amount), 10) + ";"
+		strName := fav.Name + ";"
+		strCategory := string(fav.Category) + ";"
+
+		text += strID + strAccountID + strAmount + strName + strCategory + "\n"
+	}
+
+	_, err = fileFav.Write([]byte(text))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *Service) ImportFromFile(path string) error {
+func (s *Service) Import(dir string) error {
 
-	file, err := os.Open(path)
+	fileAcc, err := os.Open(dir + "/accounts.dump")
 	if err != nil {
-		return err
-
+		log.Fatal(err)
 	}
-	defer file.Close()
-	data := make([]byte, 64)
-	read := ""
-	for {
-		n, err := file.Read(data)
-		if err == io.EOF { // если конец файла
-			break // выходим из цикла
+	defer fileAcc.Close()
+	if err == nil {
+		scanner := bufio.NewScanner(fileAcc)
+		for scanner.Scan() {
+			line := strings.Split(scanner.Text(), ";")
+			ID, _ := strconv.ParseInt(line[0], 10, 64)
+			phone := types.Phone(line[1])
+			balance, _ := strconv.ParseInt(line[2], 10, 64)
+			acc, errAcc := s.FindAccountByID(ID)
+			if errAcc == nil {
+				acc.ID = ID
+				acc.Phone = phone
+				acc.Balance = types.Money(balance)
+			}
+
+			if errAcc != nil {
+				addAcc := &types.Account{
+					ID:      ID,
+					Phone:   phone,
+					Balance: types.Money(balance),
+				}
+				s.accounts = append(s.accounts, addAcc)
+			}
+			if s.nextAccountID < ID {
+				s.nextAccountID = ID
+			}
 		}
-		read += string(data[:n])
-
-	}
-	//fmt.Println(a)
-	importAcc := strings.Split(read, "|")
-	importAcc = importAcc[:len(importAcc)-1]
-	for _, acc := range importAcc {
-		account := strings.Split(acc, ";")
-		ID, _ := strconv.ParseInt(account[0], 10, 64)
-		phone := types.Phone(account[1])
-		balance, _ := strconv.ParseInt(account[2], 10, 64)
-
-		addAcc := &types.Account{
-			ID:      ID,
-			Phone:   phone,
-			Balance: types.Money(balance),
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
 		}
-		s.accounts = append(s.accounts, addAcc)
 	}
+	filePay, err := os.Open(dir + "/payments.dump")
+	if err != nil {
+		log.Print(err)
+	}
+	defer filePay.Close()
+	if err == nil {
+		scanner := bufio.NewScanner(filePay)
+		for scanner.Scan() {
+			line := strings.Split(scanner.Text(), ";")
+			ID := line[0]
+			accountID, _ := strconv.ParseInt(line[1], 10, 64)
+			amount, _ := strconv.ParseInt(line[2], 10, 64)
+			category := types.PaymentCategory(line[3])
+			status := types.PaymentStatus(line[4])
+			pay, err := s.FindPaymentByID(ID)
+			if err == nil {
+				pay.ID = ID
+				pay.AccountID = accountID
+				pay.Amount = types.Money(amount)
+				pay.Category = category
+				pay.Status = status
+			}
+			if err != nil {
+				addPay := &types.Payment{
+					ID:        ID,
+					AccountID: accountID,
+					Amount:    types.Money(amount),
+					Category:  category,
+					Status:    status,
+				}
+				s.payments = append(s.payments, addPay)
+			}
+		}
+	}
+
+	fileFav, err := os.Open(dir + "/favorites.dump")
+	if err != nil {
+		log.Print(err)
+	}
+	defer fileFav.Close()
+	if err == nil {
+		scanner := bufio.NewScanner(fileFav)
+		for scanner.Scan() {
+			line := strings.Split(scanner.Text(), ";")
+			ID := line[0]
+			accountID, _ := strconv.ParseInt(line[1], 10, 64)
+			amount, _ := strconv.ParseInt(line[2], 10, 64)
+			name := line[3]
+			category := types.PaymentCategory(line[4])
+
+			fav, err := s.FindFavoriteByID(ID)
+			if err == nil {
+				fav.ID = ID
+				fav.AccountID = accountID
+				fav.Amount = types.Money(amount)
+				fav.Name = name
+				fav.Category = category
+			}
+			if err != nil {
+				addFav := &types.Favorite{
+					ID:        ID,
+					AccountID: accountID,
+					Amount:    types.Money(amount),
+					Name:      name,
+					Category:  category,
+				}
+				s.favorites = append(s.favorites, addFav)
+			}
+		}
+	}
+
 	return nil
 }
