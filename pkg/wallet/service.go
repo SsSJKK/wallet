@@ -624,6 +624,7 @@ func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payme
 	wg.Wait()
 	return Payments, nil
 }
+
 //FilterPaymentsByFn meth
 func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, goroutines int) ([]types.Payment, error) {
 	wg := sync.WaitGroup{}
@@ -631,7 +632,7 @@ func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, go
 	i := 0
 	count := len(s.payments) / goroutines
 
-	Payments := []types.Payment{}
+	var ps []types.Payment
 	if goroutines == 0 {
 		count = len(s.payments)
 	}
@@ -640,17 +641,23 @@ func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, go
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
-			pays := []types.Payment{}
+			var pays []types.Payment
 			payments := s.payments[index*count : (index+1)*count]
 			for _, payment := range payments {
-				if filter(*payment) {
-					pays = append(pays, *payment)
+				p := types.Payment{
+					ID:        payment.ID,
+					AccountID: payment.AccountID,
+					Amount:    payment.Amount,
+					Category:  payment.Category,
+					Status:    payment.Status,
+				}
+
+				if filter(p) {
+					pays = append(pays, p)
 				}
 			}
 			mu.Lock()
-			for _, add := range pays {
-				Payments = append(Payments, add)
-			}
+			ps = append(ps, pays...)
 			mu.Unlock()
 
 		}(i)
@@ -658,26 +665,33 @@ func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, go
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		pays := []types.Payment{}
-		payments := s.payments[i:]
+		var pays []types.Payment
+		payments := s.payments[i*count:]
 		for _, payment := range payments {
-			if filter(*payment) {
-				pays = append(pays, *payment)
+
+			p := types.Payment{
+				ID:        payment.ID,
+				AccountID: payment.AccountID,
+				Amount:    payment.Amount,
+				Category:  payment.Category,
+				Status:    payment.Status,
+			}
+
+			if filter(p) {
+				pays = append(pays, p)
 			}
 		}
 		mu.Lock()
-		for _, add := range pays {
-			Payments = append(Payments, add)
-		}
+		ps = append(ps, pays...)
 		mu.Unlock()
 
 	}()
 
 	wg.Wait()
 
-	if len(Payments) == 0 {
+	if len(ps) == 0 {
 		return nil, nil
 	}
 
-	return Payments, nil
+	return ps, nil
 }
