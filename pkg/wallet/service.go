@@ -412,3 +412,75 @@ func (s *Service) Import(dir string) error {
 
 	return nil
 }
+func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
+
+	_, err := s.FindAccountByID(accountID)
+	if err != nil {
+		return nil, err
+	}
+	paymets := []types.Payment{}
+	for _, pay := range s.payments {
+		if pay.AccountID == accountID {
+			paymets = append(paymets, *pay)
+		}
+	}
+	return paymets, nil
+
+}
+
+func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records int) error {
+	if len(payments) <= records{
+		s.PaymentsToFile(payments,dir + "/payments.dump")
+		return nil
+	}
+		for i:= 0; i<=len(payments)/records; i++{
+			first := records * i 
+			end := records*(i+1)
+			if end > len(payments){
+				end = len(payments)
+			}
+			if first == end{
+				break
+			}
+			pays := payments[first : end]
+			index := strconv.FormatInt(int64(i+1),10)
+			s.PaymentsToFile(pays, dir + "/payments"+index+".dump")
+		}
+		log.Print(len(payments))
+		return nil
+
+}
+
+func (s *Service) PaymentsToFile(payments []types.Payment, path string) error {
+
+	filePay, err := os.Create(path)
+	if err != nil {
+		log.Println(3)
+		return err
+	}
+	//	defer filePay.Close()
+	text := ""
+	for _, pay := range payments {
+		if pay.AccountID == 0 {
+			break
+		}
+		strID := pay.ID + ";"
+		strAccountID := strconv.FormatInt(int64(pay.AccountID), 10) + ";"
+		strAmount := strconv.FormatInt(int64(pay.Amount), 10) + ";"
+		strCategory := string(pay.Category) + ";"
+		strStatus := string(pay.Status) + ";"
+
+		text += strID + strAccountID + strAmount + strCategory + strStatus + "\n"
+	}
+
+	log.Print(text)
+
+	_, err = filePay.Write([]byte(text))
+	if err != nil {
+		log.Println(4)
+		return err
+	}
+	filePay.Close()
+	return nil
+
+}
