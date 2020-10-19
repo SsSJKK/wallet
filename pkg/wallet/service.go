@@ -565,3 +565,58 @@ func (s *Service) SumPayments(goroutines int) types.Money {
 	wg.Wait()
 	return types.Money(sum)
 }
+
+//FilterPayments meth
+func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
+
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	i := 0
+
+	count := len(s.payments) / goroutines
+	Payments := []types.Payment{}
+
+	if goroutines == 0 {
+		count = len(s.payments)
+	}
+
+	for i = 0; i < goroutines-1; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			payments := s.payments[index*count : (index+1)*count]
+			pays := []types.Payment{}
+			for _, payment := range payments {
+				if payment.AccountID == accountID {
+					pays = append(pays, *payment)
+				}
+			}
+			mu.Lock()
+			for _, add := range pays {
+				Payments = append(Payments, add)
+			}
+			mu.Unlock()
+
+		}(i)
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		payments := s.payments[i*count:]
+		pays := []types.Payment{}
+		for _, payment := range payments {
+			if payment.AccountID == accountID {
+				pays = append(pays, *payment)
+			}
+		}
+		mu.Lock()
+		for _, add := range pays {
+			Payments = append(Payments, add)
+		}
+		mu.Unlock()
+
+	}()
+	wg.Wait()
+	return Payments, nil
+}

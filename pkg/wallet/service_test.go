@@ -200,10 +200,11 @@ func TestService_ExportToFile(t *testing.T) {
 	s := newTestService()
 	acc, _ := s.RegisterAccount("1010")
 	s.Deposit(acc.ID, 100)
+	pay, _ := s.Pay(acc.ID, 10, "test")
 	s.Pay(acc.ID, 10, "test")
 	s.Pay(acc.ID, 10, "test")
 	s.Pay(acc.ID, 10, "test")
-	s.Pay(acc.ID, 10, "test")
+	s.FavoritePayment(pay.ID, "Ashur")
 	s.ExportToFile("../../data/accounts.txt")
 }
 
@@ -216,10 +217,11 @@ func TestService_Export(t *testing.T) {
 	s := newTestService()
 	acc, _ := s.RegisterAccount("1010")
 	s.Deposit(acc.ID, 100)
+	pay, _ := s.Pay(acc.ID, 10, "test")
 	s.Pay(acc.ID, 10, "test")
 	s.Pay(acc.ID, 10, "test")
 	s.Pay(acc.ID, 10, "test")
-	s.Pay(acc.ID, 10, "test")
+	s.FavoritePayment(pay.ID, "Ashur")
 	s.Export("../../data/")
 }
 
@@ -227,4 +229,3 @@ func TestService_Import(t *testing.T) {
 	s := newTestService()
 	s.Import("../../data/")
 }
-
