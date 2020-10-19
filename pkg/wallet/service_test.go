@@ -195,3 +195,36 @@ func BenchmarkService_SumPayments(b *testing.B) {
 		b.Errorf(" error, want => %v got => %v", want, got)
 	}
 }
+
+func TestService_ExportToFile(t *testing.T) {
+	s := newTestService()
+	acc, _ := s.RegisterAccount("1010")
+	s.Deposit(acc.ID, 100)
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.ExportToFile("../../data/accounts.txt")
+}
+
+func TestService_ImportFromFile(t *testing.T) {
+	s := newTestService()
+	s.ImportFromFile("../../data/accounts.txt")
+}
+
+func TestService_Export(t *testing.T) {
+	s := newTestService()
+	acc, _ := s.RegisterAccount("1010")
+	s.Deposit(acc.ID, 100)
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Export("../../data/")
+}
+
+func TestService_Import(t *testing.T) {
+	s := newTestService()
+	s.Import("../../data/")
+}
+
