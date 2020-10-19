@@ -574,7 +574,7 @@ func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payme
 
 	i := 0
 	_, err := s.FindAccountByID(accountID)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
