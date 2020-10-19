@@ -8,19 +8,32 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 
 	"github.com/SsSJKK/wallet/pkg/types"
 )
 
+//ErrPhoneRegistered err
 var ErrPhoneRegistered = errors.New("phone already registered")
+
+//ErrAmountMustBePositive err
 var ErrAmountMustBePositive = errors.New("amount must be greater than zero")
+
+//ErrAccountNotFound err
 var ErrAccountNotFound = errors.New("account not found")
+
+//ErrNotEnoughBalance err
 var ErrNotEnoughBalance = errors.New("not enough balance")
+
+//ErrPaymentNotFound err
 var ErrPaymentNotFound = errors.New("payment not found")
+
+//ErrFavoriteNotFound err
 var ErrFavoriteNotFound = errors.New("favorite not found")
 
+//Service struct
 type Service struct {
 	nextAccountID int64
 	accounts      []*types.Account
@@ -28,6 +41,7 @@ type Service struct {
 	favorites     []*types.Favorite
 }
 
+//RegisterAccount meth
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	for _, account := range s.accounts {
 		if account.Phone == phone {
@@ -46,6 +60,7 @@ func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	return account, nil
 }
 
+//FindAccountByID meth
 func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 	for _, account := range s.accounts {
 		if account.ID == accountID {
@@ -56,6 +71,7 @@ func (s *Service) FindAccountByID(accountID int64) (*types.Account, error) {
 	return nil, ErrAccountNotFound
 }
 
+//Deposit meth
 func (s *Service) Deposit(accountID int64, amount types.Money) error {
 	if amount <= 0 {
 		return ErrAmountMustBePositive
@@ -71,6 +87,7 @@ func (s *Service) Deposit(accountID int64, amount types.Money) error {
 	return nil
 }
 
+//Pay meth
 func (s *Service) Pay(accountID int64, amount types.Money, category types.PaymentCategory) (*types.Payment, error) {
 	if amount <= 0 {
 		return nil, ErrAmountMustBePositive
@@ -104,6 +121,7 @@ func (s *Service) Pay(accountID int64, amount types.Money, category types.Paymen
 	return payment, nil
 }
 
+//FindPaymentByID meth
 func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 	for _, payment := range s.payments {
 		if payment.ID == paymentID {
@@ -114,6 +132,7 @@ func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 	return nil, ErrPaymentNotFound
 }
 
+//Reject meth
 func (s *Service) Reject(paymentID string) error {
 	payment, err := s.FindPaymentByID(paymentID)
 	if err != nil {
@@ -129,6 +148,7 @@ func (s *Service) Reject(paymentID string) error {
 	return nil
 }
 
+//Repeat meth
 func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	payment, err := s.FindPaymentByID(paymentID)
 	if err != nil {
@@ -138,6 +158,7 @@ func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	return s.Pay(payment.AccountID, payment.Amount, payment.Category)
 }
 
+//FavoritePayment meth
 func (s *Service) FavoritePayment(paymentID string, name string) (*types.Favorite, error) {
 	payment, err := s.FindPaymentByID(paymentID)
 	if err != nil {
@@ -156,6 +177,7 @@ func (s *Service) FavoritePayment(paymentID string, name string) (*types.Favorit
 	return favorite, nil
 }
 
+//FindFavoriteByID meth
 func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
 	for _, favorite := range s.favorites {
 		if favorite.ID == favoriteID {
@@ -166,6 +188,7 @@ func (s *Service) FindFavoriteByID(favoriteID string) (*types.Favorite, error) {
 	return nil, ErrFavoriteNotFound
 }
 
+//PayFromFavorite meth
 func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	favorite, err := s.FindFavoriteByID(favoriteID)
 	if err != nil {
@@ -174,6 +197,8 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 
 	return s.Pay(favorite.AccountID, favorite.Amount, favorite.Category)
 }
+
+//ExportToFile meth
 func (s *Service) ExportToFile(path string) error {
 
 	file, err := os.Create(path)
@@ -197,6 +222,7 @@ func (s *Service) ExportToFile(path string) error {
 	return nil
 }
 
+//ImportFromFile meth
 func (s *Service) ImportFromFile(path string) error {
 
 	file, err := os.Open(path)
@@ -234,6 +260,7 @@ func (s *Service) ImportFromFile(path string) error {
 	return nil
 }
 
+//Export meth
 func (s *Service) Export(dir string) error {
 	if s.accounts != nil {
 		fileAccounts, err := os.Create(dir + "/accounts.dump")
@@ -302,6 +329,7 @@ func (s *Service) Export(dir string) error {
 	return nil
 }
 
+//Import meth
 func (s *Service) Import(dir string) error {
 
 	fileAcc, err := os.Open(dir + "/accounts.dump")
@@ -412,6 +440,8 @@ func (s *Service) Import(dir string) error {
 
 	return nil
 }
+
+//ExportAccountHistory meth
 func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error) {
 
 	_, err := s.FindAccountByID(accountID)
@@ -428,6 +458,7 @@ func (s *Service) ExportAccountHistory(accountID int64) ([]types.Payment, error)
 
 }
 
+//HistoryToFiles meth
 func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records int) error {
 	if len(payments) == 0 {
 		return nil
@@ -454,6 +485,7 @@ func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records i
 
 }
 
+//PaymentsToFile meth
 func (s *Service) PaymentsToFile(payments []types.Payment, path string) error {
 
 	filePay, err := os.Create(path)
@@ -486,4 +518,50 @@ func (s *Service) PaymentsToFile(payments []types.Payment, path string) error {
 	filePay.Close()
 	return nil
 
+}
+
+//SumPayments meth
+func (s *Service) SumPayments(goroutines int) types.Money {
+
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+
+	i := 0
+	sum := int64(0)
+	count := len(s.payments) / goroutines
+
+	if goroutines == 0 {
+		count = len(s.payments)
+	}
+
+	for i = 0; i < goroutines-1; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			val := int64(0)
+			payments := s.payments[index*count : (index+1)*count]
+			for _, payment := range payments {
+				val += int64(payment.Amount)
+			}
+			mu.Lock()
+			sum += val
+			mu.Unlock()
+
+		}(i)
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		val := int64(0)
+		payments := s.payments[i*count:]
+		for _, payment := range payments {
+			val += int64(payment.Amount)
+		}
+		mu.Lock()
+		sum += val
+		mu.Unlock()
+
+	}()
+	wg.Wait()
+	return types.Money(sum)
 }

@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	sum "github.com/SsSJKK/wallet/cmd"
+
 	"github.com/SsSJKK/wallet/pkg/types"
 )
 
@@ -176,5 +178,24 @@ func Test_Pay_Favorite_OK(t *testing.T) {
 	}
 	if fvrt.Category != payFvrt.Category {
 		t.Errorf("ERROR: Test_Favorite_OK_Category: %v %v", fvrt.Category, payFvrt.Category)
+	}
+	a := sum.Regular()
+	t.Errorf("%v", a)
+}
+
+func BenchmarkService_SumPayments(b *testing.B) {
+	s := newTestService()
+	acc, _ := s.RegisterAccount("1010")
+	s.Deposit(acc.ID, 100)
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+	s.Pay(acc.ID, 10, "test")
+
+	want := types.Money(40)
+
+	got := s.SumPayments(1)
+	if want != got {
+		b.Errorf(" error, want => %v got => %v", want, got)
 	}
 }
