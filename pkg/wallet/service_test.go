@@ -229,3 +229,14 @@ func TestService_Import(t *testing.T) {
 	s := newTestService()
 	s.Import("../../data/")
 }
+
+func Test_ExportAccountHistory_OK(t *testing.T) {
+	svc := &Service{}
+	svc.Import("../../data")
+	pays, _ := svc.ExportAccountHistory(1)
+	svc.HistoryToFiles(pays, "../../data", 1)
+	svc.PaymentsToFile(pays, ".../.../data")
+	svc.SumPayments(2)
+	svc.FilterPayments(1, 10)
+	svc.SumPaymentsWithProgress()
+}

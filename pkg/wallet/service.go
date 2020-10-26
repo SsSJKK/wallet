@@ -41,6 +41,11 @@ type Service struct {
 	favorites     []*types.Favorite
 }
 
+type Progress struct {
+	Part   int
+	Result types.Money
+}
+
 //RegisterAccount meth
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	for _, account := range s.accounts {
@@ -694,4 +699,38 @@ func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, go
 	}
 
 	return ps, nil
+}
+
+//SumPaymentsWithProgress f
+func (s *Service) SumPaymentsWithProgress() <-chan Progress {
+	ch := make(chan Progress)
+	l := 1000
+	count := len(s.payments) / l
+	wg := sync.WaitGroup{}
+	for i := 0; i <= count; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			var payments []*types.Payment
+			if index < count {
+				payments = s.payments[index*l : (index+1)*l]
+			} else {
+				payments = s.payments[index*l:]
+			}
+			var val types.Money
+			for _, payment := range payments {
+				val += payment.Amount
+			}
+			progress := Progress{
+				Part:   index,
+				Result: val,
+			}
+			ch <- progress
+		}(i)
+	}
+	go func() {
+		defer close(ch)
+		wg.Wait()
+	}()
+	return ch
 }
