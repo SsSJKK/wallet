@@ -704,7 +704,7 @@ func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, go
 //SumPaymentsWithProgress f
 func (s *Service) SumPaymentsWithProgress() <-chan Progress {
 	ch := make(chan Progress)
-	l := 1000
+	l := 100_000
 	count := len(s.payments) / l
 	wg := sync.WaitGroup{}
 	for i := 0; i <= count; i++ {
